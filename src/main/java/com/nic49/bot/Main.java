@@ -13,6 +13,8 @@ import java.util.EnumSet;
 
 public class Main {
 
+
+
     public static void main(String args[]) {
         Dotenv dotenv = Dotenv.load();
         String token = dotenv.get("DISCORD_TOKEN");
@@ -29,7 +31,6 @@ public class Main {
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE);
 
-        // --------------------------------------------------
         CommandsManager commandsManager = new CommandsManager();
 
         builder.addEventListeners(
