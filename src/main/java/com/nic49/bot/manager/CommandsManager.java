@@ -165,20 +165,30 @@ public class CommandsManager extends ListenerAdapter {
                 }
 
                 case "makepost" -> {
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedBuilder()
+                            .setTitle(event.getOption("title").getAsString())
+                            .setDescription(event.getOption("body").getAsString())
+                            .setFooter("Post by " + event.getUser().getEffectiveName())
+                            .setTimestamp(java.time.Instant.now())
+                            .setColor(Color.CYAN);
 
-                    embed.setTitle(event.getOption("title").getAsString());
-                    embed.setDescription(event.getOption("body").getAsString());
-                    embed.setColor(Color.ORANGE);
+                    String messageContent = "";
                     var attachmentOption = event.getOption("attachment");
 
                     if (attachmentOption != null) {
+                        var attachment = attachmentOption.getAsAttachment();
 
-                        String imageUrl = attachmentOption.getAsAttachment().getProxyUrl();
-                        embed.setImage(imageUrl);
+                        if (attachment.isVideo()) {
+                            messageContent = attachment.getProxyUrl();
+                        } else {
+                            embed.setImage(attachment.getProxyUrl());
+                        }
                     }
 
-                    event.replyEmbeds(embed.build()).queue();
+                    // Send both: the text/video link and the embed
+                    event.reply(messageContent)
+                            .addEmbeds(embed.build())
+                            .queue();
                 }
 
             }
