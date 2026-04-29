@@ -170,7 +170,7 @@ public class CommandsManager extends ListenerAdapter {
                             .setDescription(event.getOption("body").getAsString())
                             .setFooter("Post by " + event.getUser().getEffectiveName())
                             .setTimestamp(java.time.Instant.now())
-                            .setColor(Color.CYAN);
+                            .setColor(Color.decode("#FF5700"));
 
                     String messageContent = "";
                     var attachmentOption = event.getOption("attachment");
