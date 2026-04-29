@@ -118,15 +118,18 @@ public class CommandsManager extends ListenerAdapter {
                 }
 
                 case "update" -> {
-                    event.reply("Pulling changes from GitHub repository and restarting").queue();
-                    try {
-                        Runtime.getRuntime().exec("sh /home/ubuntu/nic49/update_bot.sh");
+                    event.reply("Restarting system from `/home/ubuntu/nic49`... 🔄").setEphemeral(true).queue(v -> {
+                        try {
+                            // Using /usr/bin/sh ensures the system finds the shell executor
+                            ProcessBuilder pb = new ProcessBuilder("/usr/bin/sh", "/home/ubuntu/nic49/update_bot.sh");
+                            pb.start();
 
-                        event.getJDA().shutdown();
-                        System.exit(0);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                            event.getJDA().shutdown();
+                            System.exit(0);
+                        } catch (java.io.IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
                 }
 
                 case "stop" -> {
