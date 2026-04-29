@@ -172,22 +172,10 @@ public class CommandsManager extends ListenerAdapter {
                             .setTimestamp(java.time.Instant.now())
                             .setColor(Color.decode("#FF5700"));
 
-                    String messageContent = "";
-                    var attachmentOption = event.getOption("attachment");
+                    embed.setImage(event.getOption("attachment").getAsAttachment().getProxyUrl());
 
-                    if (attachmentOption != null) {
-                        var attachment = attachmentOption.getAsAttachment();
-
-                        if (attachment.isVideo()) {
-                            messageContent = attachment.getProxyUrl();
-                        } else {
-                            embed.setImage(attachment.getProxyUrl());
-                        }
-                    }
-
-                    // Send both: the text/video link and the embed
                     event.replyEmbeds(embed.build()).queue();
-                    event.getChannel().sendMessage(messageContent).queue();
+
                 }
 
             }
