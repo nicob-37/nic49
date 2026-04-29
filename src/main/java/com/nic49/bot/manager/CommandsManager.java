@@ -1,6 +1,7 @@
 package com.nic49.bot.manager;
 
 import com.nic49.bot.ID;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.IntegrationType;
@@ -11,7 +12,8 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Method;
+import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,6 +71,9 @@ public class CommandsManager extends ListenerAdapter {
 
         // ------------------------Commands----------------------------
         commands.add(new SlashCommandEx("ping", "Pong"));
+
+
+        commands.add(new SlashCommandEx("update", "Restarts the bot", ID.NICO));
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
 
@@ -112,8 +117,35 @@ public class CommandsManager extends ListenerAdapter {
                     event.reply("Pong!").queue();
                 }
 
-                case "adminpanel" -> {
+                case "update" -> {
+                    event.reply("Pulling changes from GitHub repository and restarting").queue();
+                    try {
+                        Runtime.getRuntime().exec("sh /home/ubuntu/nic49/update_bot.sh");
 
+                        event.getJDA().shutdown();
+                        System.exit(0);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                case "stop" -> {
+                    event.reply("Shutting off bot").queue();
+                    event.getJDA().shutdown();
+                    System.exit(0);
+                }
+
+                case "adminpanel" -> {
+                    var embed = new EmbedBuilder();
+
+                    embed.setTitle("Admin Panel")
+                            .setDescription("Bot Operating Fine")
+                            .setColor(Color.DARK_GRAY)
+                            .addField("Commands Enabled?", commandsEnabled ? "True" : "False", true)
+                            .setFooter("Requested by: " + event.getUser().getEffectiveName())
+                            .setTimestamp(java.time.Instant.now());
+
+                    event.replyEmbeds(embed.build()).queue();
                 }
 
             }
