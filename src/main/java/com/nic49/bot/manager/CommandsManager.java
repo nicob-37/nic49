@@ -15,7 +15,6 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,6 +78,11 @@ public class CommandsManager extends ListenerAdapter {
         commands.add(new SlashCommandEx("stop", "Stops the bot", ID.NICO));
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
+        commands.add(new SlashCommandEx("makepost", "Make new post")
+                .addOption(OptionType.STRING, "title", "Title of your post", true)
+                .addOption(OptionType.STRING, "body", "Body of your post", true)
+                .addOption(OptionType.ATTACHMENT, "attachment", "Additional Attachment", false));
+
 
         // ------------------------------------------------------------
         List<SlashCommandData> jdaData = new ArrayList<>();
@@ -117,7 +121,7 @@ public class CommandsManager extends ListenerAdapter {
             switch (event.getName().toLowerCase()) {
 
                 case "ping" -> {
-                    event.reply("Pong!" + event.getJDA().getGatewayPing() + "ms").queue();
+                    event.reply("Pong! (" + event.getJDA().getGatewayPing() + "ms)").queue();
                 }
 
                 case "update" -> {
@@ -158,6 +162,23 @@ public class CommandsManager extends ListenerAdapter {
                             )
                             .setEphemeral(true)
                             .queue();
+                }
+
+                case "makepost" -> {
+                    var embed = new EmbedBuilder();
+
+                    embed.setTitle(event.getOption("title").getAsString());
+                    embed.setDescription(event.getOption("body").getAsString());
+                    embed.setColor(Color.ORANGE);
+                    var attachmentOption = event.getOption("attachment");
+
+                    if (attachmentOption != null) {
+
+                        String imageUrl = attachmentOption.getAsAttachment().getProxyUrl();
+                        embed.setImage(imageUrl);
+                    }
+
+                    event.replyEmbeds(embed.build()).queue();
                 }
 
             }
