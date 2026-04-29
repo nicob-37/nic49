@@ -75,7 +75,6 @@ public class CommandsManager extends ListenerAdapter {
 
         commands.add(new SlashCommandEx("update", "Restarts the bot", ID.NICO));
         commands.add(new SlashCommandEx("stop", "Stops the bot", ID.NICO));
-
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
 
