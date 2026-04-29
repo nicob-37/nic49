@@ -117,7 +117,7 @@ public class CommandsManager extends ListenerAdapter {
             switch (event.getName().toLowerCase()) {
 
                 case "ping" -> {
-                    event.reply("Pong!").queue();
+                    event.reply("Pong!" + event.getJDA().getGatewayPing() + "ms").queue();
                 }
 
                 case "update" -> {
