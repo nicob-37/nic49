@@ -21,3 +21,22 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.nic49.bot.Main'
+        )
+    }
+}
+
+// Also ensure shadowJar is configured correctly
+shadowJar {
+    archiveBaseName.set('nic49')
+    archiveClassifier.set('all')
+    archiveVersion.set('1.0')
+
+    manifest {
+        attributes 'Main-Class': 'com.nic49.bot.Main'
+    }
+}
