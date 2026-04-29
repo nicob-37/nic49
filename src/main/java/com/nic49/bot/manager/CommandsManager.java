@@ -186,9 +186,8 @@ public class CommandsManager extends ListenerAdapter {
                     }
 
                     // Send both: the text/video link and the embed
-                    event.reply(messageContent)
-                            .addEmbeds(embed.build())
-                            .queue();
+                    event.replyEmbeds(embed.build()).queue();
+                    event.getChannel().sendMessage(messageContent).queue();
                 }
 
             }
