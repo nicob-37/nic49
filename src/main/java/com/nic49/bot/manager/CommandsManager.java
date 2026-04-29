@@ -117,7 +117,7 @@ public class CommandsManager extends ListenerAdapter {
                     event.reply("Pong!").queue();
                 }
 
-                case "restart" -> {
+                case "update" -> {
                     event.reply("Restarting and checking for update...").queue(success -> {
                         try {
                             ProcessBuilder pb = new ProcessBuilder("setsid", "sh", "/home/ubuntu/nic49/update_bot.sh");
