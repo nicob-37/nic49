@@ -3,6 +3,7 @@ package com.nic49.bot.manager;
 import com.nic49.bot.ID;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.IntegrationType;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
@@ -10,6 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -148,7 +150,14 @@ public class CommandsManager extends ListenerAdapter {
                             .setFooter("Requested by: " + event.getUser().getEffectiveName())
                             .setTimestamp(java.time.Instant.now());
 
-                    event.replyEmbeds(embed.build()).queue();
+
+                    event.replyEmbeds(embed.build())
+                            .addActionRow(
+                                    Button.primary("ap_togglecommands", "Toggle Commands"), // Blurple button
+                                    Button.danger("ap_update", "Update Bot")        // Red button
+                            )
+                            .setEphemeral(true)
+                            .queue();
                 }
 
             }
@@ -156,6 +165,32 @@ public class CommandsManager extends ListenerAdapter {
         }
         else {
             event.reply("Commands are currently disabled.").setEphemeral(true).queue();
+        }
+    }
+
+    @Override
+    public void onButtonInteraction(ButtonInteractionEvent event) {
+        switch (event.getComponentId()) {
+
+            // Admin Panel
+            case "ap_togglecommands" -> {
+
+            }
+
+            case "ap_update" -> {
+                event.reply("Restarting and checking for update...").queue(success -> {
+                    try {
+                        ProcessBuilder pb = new ProcessBuilder("setsid", "sh", "/home/ubuntu/nic49/update_bot.sh");
+                        pb.start();
+                        Thread.sleep(1000);
+                        event.getJDA().shutdown();
+                        System.exit(0);
+                    } catch (Exception e) {
+                        event.getChannel().sendMessage("Critical error: " + e.getMessage()).queue();
+                    }
+                });
+            }
+
         }
     }
 }
