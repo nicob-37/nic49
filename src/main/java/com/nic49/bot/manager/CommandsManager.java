@@ -117,17 +117,16 @@ public class CommandsManager extends ListenerAdapter {
                     event.reply("Pong!").queue();
                 }
 
-                case "update" -> {
-                    event.reply("Restarting system from `/home/ubuntu/nic49`... 🔄").setEphemeral(true).queue(v -> {
+                case "restart" -> {
+                    event.reply("Restarting and checking for update...").queue(success -> {
                         try {
-                            // Using /usr/bin/sh ensures the system finds the shell executor
-                            ProcessBuilder pb = new ProcessBuilder("/usr/bin/sh", "/home/ubuntu/nic49/update_bot.sh");
+                            ProcessBuilder pb = new ProcessBuilder("setsid", "sh", "/home/ubuntu/nic49/update_bot.sh");
                             pb.start();
-
+                            Thread.sleep(1000);
                             event.getJDA().shutdown();
                             System.exit(0);
-                        } catch (java.io.IOException e) {
-                            e.printStackTrace();
+                        } catch (Exception e) {
+                            event.getChannel().sendMessage("Critical error: " + e.getMessage()).queue();
                         }
                     });
                 }
