@@ -80,8 +80,7 @@ public class CommandsManager extends ListenerAdapter {
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
         // ADMIN MANUAL COMMANDS
-        commands.add(new SlashCommandEx("react", "Add a reaction to a message", ID.NICO)
-                .addOption(OptionType.));
+        //commands.add(new SlashCommandEx("react", "Add a reaction to a message", ID.NICO).addOption(OptionType.));
 
         // ALL COMMANDS
         commands.add(new SlashCommandEx("makepost", "Make new post")
@@ -178,27 +177,24 @@ public class CommandsManager extends ListenerAdapter {
                             .setTimestamp(java.time.Instant.now())
                             .setColor(Color.decode("#FF5700"));
 
-                    try {
-                        var postImage = event.getOption("attachment").getAsAttachment();
-                        if (postImage != null) {
-                            if (postImage.isImage()) {
-                                embed.setImage(postImage.getProxyUrl());
-                            }
-                            else {
-                                // TODO: Handle Non-images someday
-                            }
+                    var attachmentOption = event.getOption("attachment");
+
+                    if (attachmentOption != null) {
+                        var postImage = attachmentOption.getAsAttachment();
+
+                        if (postImage.isImage()) {
+                            embed.setImage(postImage.getProxyUrl());
                         }
-                    } catch (Exception e) {
-                        // No Attachment present
+                        else if (postImage.isVideo()) {
+                            // TODO: Handle other types of attachments
+                        }
                     }
 
                     event.replyEmbeds(embed.build()).queue(hook -> hook.retrieveOriginal().queue(message -> {
                         message.addReaction(Emoji.fromCustom("updoot", 1474560551773536366L, false)).queue();
                         message.addReaction(Emoji.fromCustom("downdoot", 1474560608346312936L, false)).queue();
                     }));
-
                 }
-
             }
 
         }
