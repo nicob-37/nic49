@@ -82,7 +82,8 @@ public class CommandsManager extends ListenerAdapter {
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
         // ADMIN MANUAL COMMANDS
-
+        commands.add(new SlashCommandEx("message", "Send a message as the bot", ID.NICO)
+                .addOption(OptionType.STRING, "message", "Message to send", true));
 
         // ALL COMMANDS
         commands.add(new SlashCommandEx("makepost", "Make new post")
@@ -198,8 +199,14 @@ public class CommandsManager extends ListenerAdapter {
                     }));
                 }
 
+                case "message" -> {
+                    try {
+                        var message = event.getOption("message").getAsString();
 
-
+                        event.getChannel().sendMessage(message).queue();
+                    }
+                    catch (Exception e) {e.printStackTrace();}
+                }
             }
 
         }
