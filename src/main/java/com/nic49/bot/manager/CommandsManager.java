@@ -2,6 +2,7 @@ package com.nic49.bot.manager;
 
 import com.nic49.bot.ID;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -172,9 +173,23 @@ public class CommandsManager extends ListenerAdapter {
                             .setTimestamp(java.time.Instant.now())
                             .setColor(Color.decode("#FF5700"));
 
-                    embed.setImage(event.getOption("attachment").getAsAttachment().getProxyUrl());
+                    var postImage = event.getOption("attachment").getAsAttachment();
 
-                    event.replyEmbeds(embed.build()).queue();
+                    if (postImage != null) {
+
+                        if (postImage.isImage()) {
+                            embed.setImage(postImage.getProxyUrl());
+                        }
+                        else {
+                            // TODO: Handle Non-images someday
+                        }
+                    }
+
+
+                    event.replyEmbeds(embed.build()).queue(hook -> hook.retrieveOriginal().queue(message -> {
+                        message.addReaction(Emoji.fromCustom("updoot", 1474560551773536366L, false)).queue();
+                        message.addReaction(Emoji.fromCustom("downdoot", 1474560608346312936L, false)).queue();
+                    }));
 
                 }
 
