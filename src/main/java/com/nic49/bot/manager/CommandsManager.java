@@ -3,6 +3,7 @@ package com.nic49.bot.manager;
 import com.nic49.bot.ID;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -23,6 +24,7 @@ public class CommandsManager extends ListenerAdapter {
     public List<SlashCommandEx> commands = new ArrayList<>();
     boolean commandsEnabled = true;
     boolean pushingGlobal = false;
+    List<RichCustomEmoji> snEmojis = new ArrayList<>();
 
     public void onReady(@NotNull net.dv8tion.jda.api.events.session.ReadyEvent event) {
         initCommands(event);
@@ -80,13 +82,13 @@ public class CommandsManager extends ListenerAdapter {
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
         // ADMIN MANUAL COMMANDS
-        //commands.add(new SlashCommandEx("react", "Add a reaction to a message", ID.NICO).addOption(OptionType.));
+
 
         // ALL COMMANDS
         commands.add(new SlashCommandEx("makepost", "Make new post")
                 .addOption(OptionType.STRING, "title", "Title of your post", true)
                 .addOption(OptionType.STRING, "body", "Body of your post", true)
-                .addOption(OptionType.ATTACHMENT, "attachment", "Additional Attachment", false));
+                .addOption(OptionType.ATTACHMENT, "attachment", "ONLY IMAGES SUPPORTED FOR NOW", false));
 
 
         // ------------------------------------------------------------
@@ -195,6 +197,9 @@ public class CommandsManager extends ListenerAdapter {
                         message.addReaction(Emoji.fromCustom("downdoot", 1474560608346312936L, false)).queue();
                     }));
                 }
+
+
+
             }
 
         }
