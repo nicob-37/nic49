@@ -74,11 +74,16 @@ public class CommandsManager extends ListenerAdapter {
         // ------------------------Commands----------------------------
         commands.add(new SlashCommandEx("ping", "Pong"));
 
-
+        // ADMIN COMMANDS
         commands.add(new SlashCommandEx("update", "Restarts the bot", ID.NICO));
         commands.add(new SlashCommandEx("stop", "Stops the bot", ID.NICO));
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
+        // ADMIN MANUAL COMMANDS
+        commands.add(new SlashCommandEx("react", "Add a reaction to a message", ID.NICO)
+                .addOption(OptionType.));
+
+        // ALL COMMANDS
         commands.add(new SlashCommandEx("makepost", "Make new post")
                 .addOption(OptionType.STRING, "title", "Title of your post", true)
                 .addOption(OptionType.STRING, "body", "Body of your post", true)
@@ -173,18 +178,19 @@ public class CommandsManager extends ListenerAdapter {
                             .setTimestamp(java.time.Instant.now())
                             .setColor(Color.decode("#FF5700"));
 
-                    var postImage = event.getOption("attachment").getAsAttachment();
-
-                    if (postImage != null) {
-
-                        if (postImage.isImage()) {
-                            embed.setImage(postImage.getProxyUrl());
+                    try {
+                        var postImage = event.getOption("attachment").getAsAttachment();
+                        if (postImage != null) {
+                            if (postImage.isImage()) {
+                                embed.setImage(postImage.getProxyUrl());
+                            }
+                            else {
+                                // TODO: Handle Non-images someday
+                            }
                         }
-                        else {
-                            // TODO: Handle Non-images someday
-                        }
+                    } catch (Exception e) {
+                        // No Attachment present
                     }
-
 
                     event.replyEmbeds(embed.build()).queue(hook -> hook.retrieveOriginal().queue(message -> {
                         message.addReaction(Emoji.fromCustom("updoot", 1474560551773536366L, false)).queue();
