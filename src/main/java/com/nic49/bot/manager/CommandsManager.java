@@ -14,9 +14,13 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.FileUpload;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,6 +88,17 @@ public class CommandsManager extends ListenerAdapter {
         // ADMIN MANUAL COMMANDS
         commands.add(new SlashCommandEx("message", "Send a message as the bot", ID.NICO)
                 .addOption(OptionType.STRING, "message", "Message to send", true));
+
+        // HYPIXEL COMMANDS
+        OptionData pieceOption = new OptionData(OptionType.STRING, "piece", "The type of armor", true)
+                .addChoice("Helmet", "helmet")
+                .addChoice("Chestplate", "chestplate")
+                .addChoice("Leggings", "leggings")
+                .addChoice("Boots", "boots");
+        OptionData hexCode = new OptionData(OptionType.STRING, "hex", "Hex Code", true);
+        commands.add(new SlashCommandEx("armor", "Generate a piece of armor with a hex code")
+                .addOptions(pieceOption, hexCode)
+                .addOption(OptionType.BOOLEAN, "prism", "Prism Texture by looshy", false));
 
         // ALL COMMANDS
         commands.add(new SlashCommandEx("makepost", "Make new post")
@@ -181,7 +196,6 @@ public class CommandsManager extends ListenerAdapter {
                             .setColor(Color.decode("#FF5700"));
 
                     var attachmentOption = event.getOption("attachment");
-                    boolean sendImageAlert = false;
 
                     if (attachmentOption != null) {
                         var postImage = attachmentOption.getAsAttachment();
@@ -211,6 +225,35 @@ public class CommandsManager extends ListenerAdapter {
                         event.getChannel().sendMessage(message).queue();
                     }
                     catch (Exception e) {e.printStackTrace();}
+                }
+
+                case "armor" -> {
+                    var pieceOpt = event.getOption("piece");
+                    var hexOpt = event.getOption("hex");
+                    boolean prism = event.getOption("prism") != null && event.getOption("prism").getAsBoolean();
+                    if (pieceOpt == null || hexOpt == null) return;
+
+                    String piece = pieceOpt.getAsString();
+                    String hex = hexOpt.getAsString().replace("#", "");
+                    event.deferReply().queue();
+
+                    try {
+                        String urlString = prism ? "https://nico-armor-api.vercel.app/api/prism/" + piece + "/" + hex : "https://nico-armor-api.vercel.app/api/" + piece + "/" + hex;
+                        URL url = new URI(urlString).toURL();
+                        try (InputStream in = url.openStream()) {
+                            byte[] imageBytes = in.readAllBytes();
+                            FileUpload file = FileUpload.fromData(imageBytes, "armor.png");
+                            EmbedBuilder embed = new EmbedBuilder()
+                                    .setTitle("Dye Result: " + piece.substring(0, 1).toUpperCase() + piece.substring(1))
+                                    .setColor(Color.decode("0x" + hex))
+                                    .setImage("attachment://armor.png")
+                                    .setFooter("Hex: #" + hex);
+
+                            event.getHook().sendMessageEmbeds(embed.build()).addFiles(file).queue();
+                        }
+                    } catch (Exception e) {
+                        event.getHook().sendMessage("Failed to generate armor: " + e.getMessage()).setEphemeral(true).queue();
+                    }
                 }
             }
 
