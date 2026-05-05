@@ -181,6 +181,7 @@ public class CommandsManager extends ListenerAdapter {
                             .setColor(Color.decode("#FF5700"));
 
                     var attachmentOption = event.getOption("attachment");
+                    boolean sendImageAlert = false;
 
                     if (attachmentOption != null) {
                         var postImage = attachmentOption.getAsAttachment();
@@ -188,14 +189,18 @@ public class CommandsManager extends ListenerAdapter {
                         if (postImage.isImage()) {
                             embed.setImage(postImage.getProxyUrl());
                         }
-                        else if (postImage.isVideo()) {
-                            // TODO: Handle other types of attachments
-                        }
                     }
 
                     event.replyEmbeds(embed.build()).queue(hook -> hook.retrieveOriginal().queue(message -> {
                         message.addReaction(Emoji.fromCustom("updoot", 1474560551773536366L, false)).queue();
                         message.addReaction(Emoji.fromCustom("downdoot", 1474560608346312936L, false)).queue();
+
+                        if (attachmentOption != null) {
+                            if (!attachmentOption.getAsAttachment().isImage()) {
+                            hook.sendMessage("You tried to attach something that is not an image (NOT ALLOWED!!!!)").setEphemeral(true).queue();
+                            }
+                        }
+
                     }));
                 }
 
