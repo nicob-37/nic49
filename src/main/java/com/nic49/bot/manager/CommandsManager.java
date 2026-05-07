@@ -26,9 +26,10 @@ import java.util.List;
 
 public class CommandsManager extends ListenerAdapter {
     public List<SlashCommandEx> commands = new ArrayList<>();
+    public TranslationManager translate = new TranslationManager();
+
     boolean commandsEnabled = true;
     boolean pushingGlobal = false;
-    List<RichCustomEmoji> snEmojis = new ArrayList<>();
 
     public void onReady(@NotNull net.dv8tion.jda.api.events.session.ReadyEvent event) {
         initCommands(event);
@@ -87,7 +88,8 @@ public class CommandsManager extends ListenerAdapter {
 
         // ADMIN MANUAL COMMANDS
         commands.add(new SlashCommandEx("message", "Send a message as the bot", ID.NICO)
-                .addOption(OptionType.STRING, "message", "Message to send", true));
+                .addOption(OptionType.STRING, "message", "Message to send", true)
+                .addOption(OptionType.STRING, "language", "target language", false));
 
         // HYPIXEL COMMANDS
         OptionData pieceOption = new OptionData(OptionType.STRING, "piece", "The type of armor", true)
@@ -219,12 +221,32 @@ public class CommandsManager extends ListenerAdapter {
                 }
 
                 case "message" -> {
-                    try {
-                        var message = event.getOption("message").getAsString();
+                    // 1. Defer because translation/network calls can take > 3 seconds
+                    event.deferReply(true).queue();
 
-                        event.getChannel().sendMessage(message).queue();
+                    try {
+                        String content = event.getOption("message").getAsString();
+                        var langOption = event.getOption("language");
+
+                        String finalMessage = content;
+
+                        // 2. If a language is provided, translate it
+                        if (langOption != null) {
+                            String targetLang = langOption.getAsString();
+                            // Use your TranslationManager instance
+                            finalMessage = translate.translateText(content, targetLang);
+                        }
+
+                        // 3. Send the message to the channel as the bot
+                        // We use event.getChannel() to send it publicly, then reply to the interaction privately
+                        event.getChannel().sendMessage(finalMessage).queue(sentMessage -> {
+                            event.getHook().sendMessage("Message sent successfully! ✅").setEphemeral(true).queue();
+                        });
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        event.getHook().sendMessage("Error sending message: " + e.getMessage()).setEphemeral(true).queue();
                     }
-                    catch (Exception e) {e.printStackTrace();}
                 }
 
                 case "armor" -> {
