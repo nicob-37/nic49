@@ -87,9 +87,12 @@ public class CommandsManager extends ListenerAdapter {
         commands.add(new SlashCommandEx("adminpanel", "View Current Bot Settings", ID.NICO));
 
         // ADMIN MANUAL COMMANDS
+        OptionData languages = new OptionData(OptionType.STRING, "language", "language", false)
+                .addChoice("Hebrew", "he").addChoice("Arabic", "ar").addChoice("Spanish", "es").addChoice("French", "fr");
         commands.add(new SlashCommandEx("message", "Send a message as the bot", ID.NICO)
                 .addOption(OptionType.STRING, "message", "Message to send", true)
-                .addOption(OptionType.STRING, "language", "target language", false));
+                .addOptions(languages)
+        );
 
         // HYPIXEL COMMANDS
         OptionData pieceOption = new OptionData(OptionType.STRING, "piece", "The type of armor", true)
