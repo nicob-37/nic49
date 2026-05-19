@@ -111,6 +111,11 @@ public class CommandsManager extends ListenerAdapter {
                 .addOption(OptionType.STRING, "body", "Body of your post", true)
                 .addOption(OptionType.ATTACHMENT, "attachment", "ONLY IMAGES SUPPORTED FOR NOW", false));
 
+        commands.add(new SlashCommandEx("save", "Save an attachment for later use")
+                .addOption(OptionType.ATTACHMENT, "attachment", "Attachment", true)
+                .addOption(OptionType.STRING, "name", "Name of attachment", true)
+        );
+        commands.add(new SlashCommandEx("get", "Get a saved attachment from the bot"));
 
         // ------------------------------------------------------------
         List<SlashCommandData> jdaData = new ArrayList<>();
