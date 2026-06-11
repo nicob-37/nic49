@@ -4,11 +4,13 @@ import com.nic49.bot.ID;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.IntegrationType;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -23,6 +25,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CommandsManager extends ListenerAdapter {
     public List<SlashCommandEx> commands = new ArrayList<>();
@@ -106,17 +109,9 @@ public class CommandsManager extends ListenerAdapter {
                 .addOptions(pieceOption, hexCode)
                 .addOption(OptionType.BOOLEAN, "prism", "Prism Texture by looshy", false));
 
-        // ------------------ HYPIXEL TRACKING COMMANDS ------------------
-        var activeItems = transactionManager.getActiveInvestments().keySet();
-        OptionData sellItemOption = new OptionData(OptionType.STRING, "item", "The item you are selling", true);
-
-        if (activeItems.isEmpty()) {
-            sellItemOption.addChoice("No active investments tracked", "none");
-        } else {
-            activeItems.stream().limit(25).forEach(itemName -> {
-                sellItemOption.addChoice(itemName, itemName);
-            });
-        }
+        // ------------------ HYPIXEL TRACKING COMMANDS (WITH AUTOCOMPLETE) ------------------
+        // Setting autocomplete explicitly to true lets us feed lists on-the-fly
+        OptionData sellItemOption = new OptionData(OptionType.STRING, "item", "The item you are selling", true, true);
 
         net.dv8tion.jda.api.interactions.commands.build.SubcommandData boughtSub =
                 new net.dv8tion.jda.api.interactions.commands.build.SubcommandData("bought", "Record a bought item")
@@ -156,6 +151,25 @@ public class CommandsManager extends ListenerAdapter {
 
         if (pushingGlobal) {
             event.getJDA().updateCommands().addCommands(jdaData).queue();
+        }
+    }
+
+    @Override
+    public void onCommandAutoCompleteInteraction(@NotNull CommandAutoCompleteInteractionEvent event) {
+        // Runs instantly when typing inside the /lb sold 'item' field
+        if (event.getName().equals("lb") && event.getSubcommandName() != null && event.getSubcommandName().equals("sold")) {
+            if (event.getFocusedOption().getName().equals("item")) {
+                String currentInput = event.getFocusedOption().getValue().toLowerCase().trim();
+
+                // Pull your active database registry live from your file tracking store
+                var choices = transactionManager.getActiveInvestments().keySet().stream()
+                        .filter(itemName -> itemName.contains(currentInput))
+                        .limit(25)
+                        .map(itemName -> new Command.Choice(itemName, itemName))
+                        .collect(Collectors.toList());
+
+                event.replyChoices(choices).queue();
+            }
         }
     }
 
@@ -325,22 +339,18 @@ public class CommandsManager extends ListenerAdapter {
 
                             transactionManager.buyItem(item, cost);
 
-                            event.reply("Logged buy: **" + item + "** for **" + cost + "** coins! \n*Run `/update` to refresh the sell menu option list.*")
+                            event.reply("Logged buy: **" + item + "** for **" + cost + "** coins! \n*(Available in `/lb sold` dynamically!)*")
                                     .setEphemeral(true).queue();
                         }
 
                         case "sold" -> {
                             String item = event.getOption("item").getAsString();
-                            if (item.equals("none")) {
-                                event.reply("You don't have any items registered to sell right now!").setEphemeral(true).queue();
-                                return;
-                            }
 
                             int earnings = event.getOption("earnings").getAsInt();
                             Integer buyCost = transactionManager.getBuyCost(item);
 
                             if (buyCost == null) {
-                                event.reply("Error: Could not find the original purchase data for **" + item + "**.").setEphemeral(true).queue();
+                                event.reply("Error: Could not find original purchase tracking metrics for **" + item + "**. Verify the item name typed is logged.").setEphemeral(true).queue();
                                 return;
                             }
 
