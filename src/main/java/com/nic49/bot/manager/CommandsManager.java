@@ -106,30 +106,32 @@ public class CommandsManager extends ListenerAdapter {
                 .addOptions(pieceOption, hexCode)
                 .addOption(OptionType.BOOLEAN, "prism", "Prism Texture by looshy", false));
 
-        // BOUGHT COMMAND
-        commands.add(new SlashCommandEx("lb bought", "Record a bought item")
-                .addOption(OptionType.STRING, "item", "The name of the item", true)
-                .addOption(OptionType.INTEGER, "cost", "How much you paid", true)
-        );
-
-        // Get the list of items currently sitting in your active ledger
+        // ------------------ HYPIXEL TRACKING COMMANDS ------------------
         var activeItems = transactionManager.getActiveInvestments().keySet();
         OptionData sellItemOption = new OptionData(OptionType.STRING, "item", "The item you are selling", true);
 
         if (activeItems.isEmpty()) {
             sellItemOption.addChoice("No active investments tracked", "none");
         } else {
-            // Discord limits choices to a maximum of 25 items per menu
             activeItems.stream().limit(25).forEach(itemName -> {
                 sellItemOption.addChoice(itemName, itemName);
             });
         }
 
-        // SOLD COMMAND
-        commands.add(new SlashCommandEx("lb sold", "Record a sold item and check profits")
-                .addOptions(sellItemOption)
-                .addOption(OptionType.INTEGER, "earnings", "How much you sold it for", true)
-        );
+        net.dv8tion.jda.api.interactions.commands.build.SubcommandData boughtSub =
+                new net.dv8tion.jda.api.interactions.commands.build.SubcommandData("bought", "Record a bought item")
+                        .addOption(OptionType.STRING, "item", "The name of the item", true)
+                        .addOption(OptionType.INTEGER, "cost", "How much you paid", true);
+
+        net.dv8tion.jda.api.interactions.commands.build.SubcommandData soldSub =
+                new net.dv8tion.jda.api.interactions.commands.build.SubcommandData("sold", "Record a sold item and check profits")
+                        .addOptions(sellItemOption)
+                        .addOption(OptionType.INTEGER, "earnings", "How much you sold it for", true);
+
+        SlashCommandEx lbCommand = new SlashCommandEx("lb", "Skyblock ledger tools");
+        lbCommand.data.addSubcommands(boughtSub, soldSub);
+        commands.add(lbCommand);
+        // --------------------------------------------------------------------------
 
         // ALL COMMANDS
         commands.add(new SlashCommandEx("makepost", "Make new post")
@@ -247,7 +249,7 @@ public class CommandsManager extends ListenerAdapter {
 
                         if (attachmentOption != null) {
                             if (!attachmentOption.getAsAttachment().isImage()) {
-                            hook.sendMessage("You tried to attach something that is not an image (NOT ALLOWED!!!!)").setEphemeral(true).queue();
+                                hook.sendMessage("You tried to attach something that is not an image (NOT ALLOWED!!!!)").setEphemeral(true).queue();
                             }
                         }
 
@@ -311,50 +313,56 @@ public class CommandsManager extends ListenerAdapter {
                         event.getHook().sendMessage("Failed to generate armor: " + e.getMessage()).setEphemeral(true).queue();
                     }
                 }
-                case "lb bought" -> {
-                    String item = event.getOption("item").getAsString();
-                    int cost = event.getOption("cost").getAsInt();
 
-                    transactionManager.buyItem(item, cost);
+                case "lb" -> {
+                    String subcommand = event.getSubcommandName();
+                    if (subcommand == null) return;
 
-                    event.reply("Logged buy: **" + item + "** for **" + cost + "** coins! \n*Run `/update` to refresh the sell menu option list.*")
-                            .setEphemeral(true).queue();
-                }
+                    switch (subcommand) {
+                        case "bought" -> {
+                            String item = event.getOption("item").getAsString();
+                            int cost = event.getOption("cost").getAsInt();
 
-                case "lb sold" -> {
-                    String item = event.getOption("item").getAsString();
-                    if (item.equals("none")) {
-                        event.reply("You don't have any items registered to sell right now!").setEphemeral(true).queue();
-                        return;
+                            transactionManager.buyItem(item, cost);
+
+                            event.reply("Logged buy: **" + item + "** for **" + cost + "** coins! \n*Run `/update` to refresh the sell menu option list.*")
+                                    .setEphemeral(true).queue();
+                        }
+
+                        case "sold" -> {
+                            String item = event.getOption("item").getAsString();
+                            if (item.equals("none")) {
+                                event.reply("You don't have any items registered to sell right now!").setEphemeral(true).queue();
+                                return;
+                            }
+
+                            int earnings = event.getOption("earnings").getAsInt();
+                            Integer buyCost = transactionManager.getBuyCost(item);
+
+                            if (buyCost == null) {
+                                event.reply("Error: Could not find the original purchase data for **" + item + "**.").setEphemeral(true).queue();
+                                return;
+                            }
+
+                            int profit = earnings - buyCost;
+                            String profitMessage = profit >= 0
+                                    ? "Profit: +**" + profit + "** coins! 📈"
+                                    : "Loss: -**" + Math.abs(profit) + "** coins... 📉";
+
+                            transactionManager.sellItem(item);
+
+                            var embed = new EmbedBuilder()
+                                    .setTitle("Skyblock Flip Logged!")
+                                    .setColor(profit >= 0 ? Color.GREEN : Color.RED)
+                                    .addField("Item Name", item, true)
+                                    .addField("Purchase Price", buyCost + " coins", true)
+                                    .addField("Sale Price", earnings + " coins", true)
+                                    .setDescription("### " + profitMessage)
+                                    .setTimestamp(java.time.Instant.now());
+
+                            event.replyEmbeds(embed.build()).queue();
+                        }
                     }
-
-                    int earnings = event.getOption("earnings").getAsInt();
-                    Integer buyCost = transactionManager.getBuyCost(item);
-
-                    if (buyCost == null) {
-                        event.reply("Error: Could not find the original purchase data for **" + item + "**.").setEphemeral(true).queue();
-                        return;
-                    }
-
-                    // Profit calculation math
-                    int profit = earnings - buyCost;
-                    String profitMessage = profit >= 0
-                            ? "Profit: +**" + profit + "** coins! 📈"
-                            : "Loss: -**" + Math.abs(profit) + "** coins... 📉";
-
-                    // Remove it from the active ledger since it's now sold
-                    transactionManager.sellItem(item);
-
-                    var embed = new EmbedBuilder()
-                            .setTitle("Skyblock Flip Logged!")
-                            .setColor(profit >= 0 ? Color.GREEN : Color.RED)
-                            .addField("Item Name", item, true)
-                            .addField("Purchase Price", buyCost + " coins", true)
-                            .addField("Sale Price", earnings + " coins", true)
-                            .setDescription("### " + profitMessage)
-                            .setTimestamp(java.time.Instant.now());
-
-                    event.replyEmbeds(embed.build()).queue();
                 }
             }
 
