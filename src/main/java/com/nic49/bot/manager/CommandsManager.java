@@ -115,7 +115,10 @@ public class CommandsManager extends ListenerAdapter {
                 .addOption(OptionType.ATTACHMENT, "attachment", "Attachment", true)
                 .addOption(OptionType.STRING, "name", "Name of attachment", true)
         );
-        commands.add(new SlashCommandEx("get", "Get a saved attachment from the bot"));
+        commands.add(new SlashCommandEx("get", "Get a saved attachment from the bot")
+                .addOptions(/*TODO: ADD ATTACHMENTS LIST HERE*/));
+        commands.add(new SlashCommandEx("delete", "Deletes a saved attachment in the bot")
+                .addOptions(/*TODO: ADD ATTACHMENTS LIST HERE*/));
 
         // ------------------------------------------------------------
         List<SlashCommandData> jdaData = new ArrayList<>();
@@ -284,6 +287,11 @@ public class CommandsManager extends ListenerAdapter {
                     } catch (Exception e) {
                         event.getHook().sendMessage("Failed to generate armor: " + e.getMessage()).setEphemeral(true).queue();
                     }
+                }
+
+                case "save" -> {
+                    var attachment = event.getOption("attachment").getAsAttachment();
+                    String attachmentName = event.getOption("name").getAsString();
                 }
             }
 
