@@ -4,11 +4,13 @@ import com.nic49.bot.ID;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.IntegrationType;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -23,10 +25,12 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CommandsManager extends ListenerAdapter {
     public List<SlashCommandEx> commands = new ArrayList<>();
     public TranslationManager translate = new TranslationManager();
+    public TransactionManager transactionManager = new TransactionManager();
 
     boolean commandsEnabled = true;
     boolean pushingGlobal = false;
@@ -105,6 +109,25 @@ public class CommandsManager extends ListenerAdapter {
                 .addOptions(pieceOption, hexCode)
                 .addOption(OptionType.BOOLEAN, "prism", "Prism Texture by looshy", false));
 
+        // ------------------ HYPIXEL TRACKING COMMANDS (WITH AUTOCOMPLETE) ------------------
+        // Setting autocomplete explicitly to true lets us feed lists on-the-fly
+        OptionData sellItemOption = new OptionData(OptionType.STRING, "item", "The item you are selling", true, true);
+
+        net.dv8tion.jda.api.interactions.commands.build.SubcommandData boughtSub =
+                new net.dv8tion.jda.api.interactions.commands.build.SubcommandData("bought", "Record a bought item")
+                        .addOption(OptionType.STRING, "item", "The name of the item", true)
+                        .addOption(OptionType.INTEGER, "cost", "How much you paid", true);
+
+        net.dv8tion.jda.api.interactions.commands.build.SubcommandData soldSub =
+                new net.dv8tion.jda.api.interactions.commands.build.SubcommandData("sold", "Record a sold item and check profits")
+                        .addOptions(sellItemOption)
+                        .addOption(OptionType.INTEGER, "earnings", "How much you sold it for", true);
+
+        SlashCommandEx lbCommand = new SlashCommandEx("lb", "Skyblock ledger tools");
+        lbCommand.data.addSubcommands(boughtSub, soldSub);
+        commands.add(lbCommand);
+        // --------------------------------------------------------------------------
+
         // ALL COMMANDS
         commands.add(new SlashCommandEx("makepost", "Make new post")
                 .addOption(OptionType.STRING, "title", "Title of your post", true)
@@ -115,10 +138,7 @@ public class CommandsManager extends ListenerAdapter {
                 .addOption(OptionType.ATTACHMENT, "attachment", "Attachment", true)
                 .addOption(OptionType.STRING, "name", "Name of attachment", true)
         );
-        commands.add(new SlashCommandEx("get", "Get a saved attachment from the bot")
-                .addOptions(/*TODO: ADD ATTACHMENTS LIST HERE*/));
-        commands.add(new SlashCommandEx("delete", "Deletes a saved attachment in the bot")
-                .addOptions(/*TODO: ADD ATTACHMENTS LIST HERE*/));
+        commands.add(new SlashCommandEx("get", "Get a saved attachment from the bot"));
 
         // ------------------------------------------------------------
         List<SlashCommandData> jdaData = new ArrayList<>();
@@ -131,6 +151,25 @@ public class CommandsManager extends ListenerAdapter {
 
         if (pushingGlobal) {
             event.getJDA().updateCommands().addCommands(jdaData).queue();
+        }
+    }
+
+    @Override
+    public void onCommandAutoCompleteInteraction(@NotNull CommandAutoCompleteInteractionEvent event) {
+        // Runs instantly when typing inside the /lb sold 'item' field
+        if (event.getName().equals("lb") && event.getSubcommandName() != null && event.getSubcommandName().equals("sold")) {
+            if (event.getFocusedOption().getName().equals("item")) {
+                String currentInput = event.getFocusedOption().getValue().toLowerCase().trim();
+
+                // Pull your active database registry live from your file tracking store
+                var choices = transactionManager.getActiveInvestments().keySet().stream()
+                        .filter(itemName -> itemName.contains(currentInput))
+                        .limit(25)
+                        .map(itemName -> new Command.Choice(itemName, itemName))
+                        .collect(Collectors.toList());
+
+                event.replyChoices(choices).queue();
+            }
         }
     }
 
@@ -224,7 +263,7 @@ public class CommandsManager extends ListenerAdapter {
 
                         if (attachmentOption != null) {
                             if (!attachmentOption.getAsAttachment().isImage()) {
-                            hook.sendMessage("You tried to attach something that is not an image (NOT ALLOWED!!!!)").setEphemeral(true).queue();
+                                hook.sendMessage("You tried to attach something that is not an image (NOT ALLOWED!!!!)").setEphemeral(true).queue();
                             }
                         }
 
@@ -289,9 +328,51 @@ public class CommandsManager extends ListenerAdapter {
                     }
                 }
 
-                case "save" -> {
-                    var attachment = event.getOption("attachment").getAsAttachment();
-                    String attachmentName = event.getOption("name").getAsString();
+                case "lb" -> {
+                    String subcommand = event.getSubcommandName();
+                    if (subcommand == null) return;
+
+                    switch (subcommand) {
+                        case "bought" -> {
+                            String item = event.getOption("item").getAsString();
+                            int cost = event.getOption("cost").getAsInt();
+
+                            transactionManager.buyItem(item, cost);
+
+                            event.reply("Logged buy: **" + item + "** for **" + cost + "** coins! \n*(Available in `/lb sold` dynamically!)*")
+                                    .setEphemeral(true).queue();
+                        }
+
+                        case "sold" -> {
+                            String item = event.getOption("item").getAsString();
+
+                            int earnings = event.getOption("earnings").getAsInt();
+                            Integer buyCost = transactionManager.getBuyCost(item);
+
+                            if (buyCost == null) {
+                                event.reply("Error: Could not find original purchase tracking metrics for **" + item + "**. Verify the item name typed is logged.").setEphemeral(true).queue();
+                                return;
+                            }
+
+                            int profit = earnings - buyCost;
+                            String profitMessage = profit >= 0
+                                    ? "Profit: +**" + profit + "** coins! 📈"
+                                    : "Loss: -**" + Math.abs(profit) + "** coins... 📉";
+
+                            transactionManager.sellItem(item);
+
+                            var embed = new EmbedBuilder()
+                                    .setTitle("Skyblock Flip Logged!")
+                                    .setColor(profit >= 0 ? Color.GREEN : Color.RED)
+                                    .addField("Item Name", item, true)
+                                    .addField("Purchase Price", buyCost + " coins", true)
+                                    .addField("Sale Price", earnings + " coins", true)
+                                    .setDescription("### " + profitMessage)
+                                    .setTimestamp(java.time.Instant.now());
+
+                            event.replyEmbeds(embed.build()).queue();
+                        }
+                    }
                 }
             }
 
