@@ -2,6 +2,7 @@ package com.nic49.bot;
 
 import com.nic49.bot.manager.CommandsManager;
 import com.nic49.bot.manager.GuildManager;
+import com.nic49.bot.manager.HexManager;
 import com.nic49.bot.manager.StatusManager;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.JDA;
@@ -33,13 +34,15 @@ public class Main {
         GuildManager guildManager = new GuildManager();
         CommandsManager commandsManager = new CommandsManager();
         StatusManager statusManager = new StatusManager();
+        HexManager hexManager = new HexManager();
 
 
 
         builder.addEventListeners(
                 commandsManager,
                 statusManager,
-                guildManager
+                guildManager,
+                hexManager
         );
 
         JDA bot = builder.build();
