@@ -14,20 +14,24 @@ public class HexManager extends ListenerAdapter {
     }
 
 
-    /*public double calculateDeltaE(String hex1, String hex2) {
-        double rLinear1, gLinear1, bLinear1, rLinear2, gLinear2, bLinear2;
+    public double calculateDeltaE(String hex1, String hex2) {
 
-        if (hex1.length() != 6 || hex2.length() != 6) {}
-        else {
-            rLinear1 = (double) Color.decode(hex1).getRed() / 255;
-            gLinear1 = (double) Color.decode(hex1).getGreen() / 255;
-            bLinear1 = (double) Color.decode(hex1).getBlue() / 255;
-            rLinear2 = (double) Color.decode(hex2).getRed() / 255;
-            gLinear2 = (double) Color.decode(hex2).getGreen() / 255;
-            bLinear2 = (double) Color.decode(hex2).getBlue() / 255;
+        Color hex1Color = Color.decode(hex1);
+        Color hex2Color = Color.decode(hex2);
 
+        float[] hex1Normalized = {
+                hex1Color.getRed() / 255.0f,
+                hex1Color.getGreen() / 255.0f,
+                hex1Color.getBlue() / 255.0f
+        };
 
+        float[] hex2Normalized = {
+                hex2Color.getRed() / 255.0f,
+                hex2Color.getGreen() / 255.0f,
+                hex2Color.getBlue() / 255.0f
+        };
 
-        }
-    }*/
+        //TODO: here
+        return 0f;
+    }
 }
